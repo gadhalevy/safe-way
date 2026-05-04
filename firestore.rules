@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Shelters: anyone can read & create; only creator can edit/delete
+    match /shelters/{shelterId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if request.auth != null
+        && request.auth.uid == resource.data.added_by;
+    }
+
+    // User profiles: public read, self-write
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
