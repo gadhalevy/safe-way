@@ -11,13 +11,21 @@ const makeCircleIcon = (color) =>
     iconSize: [18, 18], iconAnchor: [9, 9], popupAnchor: [0, -12],
   });
 
-const publicIcon   = makeCircleIcon('#dc2626');
-const buildingIcon = makeCircleIcon('#16a34a');
-const myPosIcon    = L.divIcon({
+const publicIcon   = makeCircleIcon('#dc2626'); // אדום
+const buildingIcon = makeCircleIcon('#16a34a'); // ירוק
+const defaultIcon  = makeCircleIcon('#dc2626'); // אדום כברירת מחדל לכל סוג לא מוכר
+
+const myPosIcon = L.divIcon({
   className: '',
   html: `<div style="width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 5px rgba(37,99,235,0.22)"></div>`,
   iconSize: [16, 16], iconAnchor: [8, 8],
 });
+
+function getIcon(type) {
+  if (type === 'building') return buildingIcon;
+  if (type === 'public') return publicIcon;
+  return defaultIcon; // כל סוג אחר — אדום
+}
 
 function FlyController({ target }) {
   const map = useMap();
@@ -28,13 +36,13 @@ function FlyController({ target }) {
 }
 
 function ShelterPopup({ s }) {
-  const isPub = s.type === 'public';
+  const isPub = s.type !== 'building';
   return (
     <div className="popup-body">
       <div className="popup-type" style={{ color: isPub ? '#dc2626' : '#16a34a' }}>
         {isPub ? '🔴 מקלט ציבורי' : '🟢 מקלט בית משותף'}
       </div>
-      <div className="popup-address">{s.address || 'ללא כתובת'}</div>
+      <div className="popup-address">{s.address || s.name || 'ללא כתובת'}</div>
       {s.floor    && <div className="popup-detail">קומה: {s.floor}</div>}
       {s.capacity && <div className="popup-detail">קיבולת: {s.capacity} אנשים</div>}
       {s.notes    && <div className="popup-detail">{s.notes}</div>}
@@ -65,6 +73,7 @@ export default function MapView({ userPos, flyTo, onSheltersLoaded }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FlyController target={flyTo} />
+
         {userPos && (
           <Marker position={[userPos.lat, userPos.lng]} icon={myPosIcon}>
             <Popup>
@@ -74,14 +83,16 @@ export default function MapView({ userPos, flyTo, onSheltersLoaded }) {
             </Popup>
           </Marker>
         )}
+
         {shelters.map((s) =>
           s.lat && s.lng ? (
-            <Marker key={s.id} position={[s.lat, s.lng]} icon={s.type === 'public' ? publicIcon : buildingIcon}>
+            <Marker key={s.id} position={[s.lat, s.lng]} icon={getIcon(s.type)}>
               <Popup maxWidth={260}><ShelterPopup s={s} /></Popup>
             </Marker>
           ) : null
         )}
       </MapContainer>
+
       <div className="map-legend">
         <h4>מקרא</h4>
         <div className="legend-item"><div className="legend-dot" style={{ background: '#dc2626' }} /><span>מקלט ציבורי</span></div>
